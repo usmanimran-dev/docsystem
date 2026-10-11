@@ -1,0 +1,74 @@
+<div class="create-user-container">
+    <h2>{{ isNew ? 'Create Document Type' : 'Document Type Maintenance' }}</h2>
+
+    <div class="status-banner" *ngIf="!isNew">
+        <span class="status-chip" [class.saved]="isSaved" [class.submitted]="isSubmitted"
+            [class.approved]="isApproved">
+            {{ isSaved ? 'Saved' : isSubmitted ? 'Submitted' : 'Approved' }}
+        </span>
+    </div>
+
+    <form [formGroup]="documentTypeForm">
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Document Type ID</mat-label>
+            <input matInput formControlName="documenttypeid" required />
+            <mat-error *ngIf="documentTypeForm.get('documenttypeid')?.hasError('required')">
+                Document Type ID is required
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Document Type Name</mat-label>
+            <input matInput formControlName="documenttype" required />
+            <mat-error *ngIf="documentTypeForm.get('documenttype')?.hasError('required')">
+                Document Type Name is required
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="documentypestatus">
+                <mat-option [value]="STATUS.APPROVED">Active</mat-option>
+                <mat-option [value]="STATUS.SAVED">In-Active</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <div class="actions">
+            <!-- New record: save only -->
+            <button *ngIf="isNew" mat-stroked-button type="button" (click)="onReset()" [disabled]="busy">
+                Reset
+            </button>
+            <button *ngIf="isNew" mat-raised-button color="primary" type="button" (click)="onSave()"
+                [disabled]="busy || documentTypeForm.invalid">
+                Save
+            </button>
+
+            <!-- Saved record: update or submit -->
+            <button *ngIf="isSaved" mat-stroked-button type="button" (click)="onUpdate()" [disabled]="busy">
+                Update
+            </button>
+            <button *ngIf="isSaved" mat-raised-button color="primary" type="button" (click)="onSubmit()"
+                [disabled]="busy || documentTypeForm.invalid">
+                Submit
+            </button>
+
+            <!-- Submitted record: approve or reject -->
+            <button *ngIf="isSubmitted" mat-raised-button color="warn" type="button" (click)="onReject()"
+                [disabled]="busy">
+                Reject
+            </button>
+            <button *ngIf="isSubmitted" mat-raised-button color="primary" type="button" (click)="onApprove()"
+                [disabled]="busy">
+                Approve
+            </button>
+
+            <button *ngIf="!isNew" mat-stroked-button type="button" (click)="onBack()" [disabled]="busy">
+                Back
+            </button>
+        </div>
+
+        <p class="result-message" *ngIf="resultMessage">{{ resultMessage }}</p>
+        <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </form>
+</div>

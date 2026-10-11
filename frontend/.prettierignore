@@ -1,0 +1,13 @@
+dist/
+.angular/
+coverage/
+node_modules/
+ingest-service/node_modules/
+examination-service/target/
+package-lock.json
+
+# Vendored Tesseract assets: generated, never hand-edited.
+public/tesseract/
+
+# Demo database export: machine-generated mongoexport output.
+examination-service/demo-data/db-export/

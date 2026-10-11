@@ -1,0 +1,346 @@
+<div class="document-reader-container">
+  <h2>Document Reader</h2>
+  <p class="subtitle">
+    Upload a document to extract its fields.
+  </p>
+
+  <!-- PREVIEW MODE (images only) -->
+  <div *ngIf="viewMode === 'preview' && documentImage" class="preview-modal">
+    <div class="preview-overlay" (click)="closePreview()"></div>
+    <div class="preview-content">
+      <div class="preview-header">
+        <span>{{ uploadedFileName }}</span>
+        <button mat-icon-button (click)="closePreview()" color="warn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="preview-body">
+        <img [src]="documentImage.src" alt="Document preview" class="preview-image">
+      </div>
+      <div class="preview-footer">
+        <small>Click close or outside to return to the editor</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- NORMAL MODE -->
+  <div *ngIf="viewMode === 'normal'" class="reader-layout">
+    <!-- Left: Document Display -->
+    <div class="document-section">
+      <div class="upload-area">
+        <input type="file" #fileInput id="fileInput" accept="image/*,.pdf"
+               (change)="onFileSelected($event)" style="display: none;">
+        <button mat-raised-button color="primary" (click)="fileInput.click()" [disabled]="isLoadingDocument">
+          Upload Document
+        </button>
+        <span *ngIf="uploadedFileName" class="file-name">{{ uploadedFileName }}</span>
+        <button mat-stroked-button *ngIf="documentFileType" (click)="openInNewTab()">
+          <mat-icon>open_in_new</mat-icon> Open in New Tab
+        </button>
+      </div>
+
+      <!-- Error Banner -->
+      <div *ngIf="errorMessage" class="error-banner">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Document Loading Spinner -->
+      <div *ngIf="isLoadingDocument" class="document-loading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading document…</p>
+      </div>
+
+      <!-- PDF VIEWER (native browser rendering, same object-URL approach as Search by Ref ID) -->
+      <div class="pdf-viewer-container" *ngIf="!isLoadingDocument && documentFileType === 'pdf' && pdfSafeUrl">
+        <iframe [src]="pdfSafeUrl" class="pdf-viewer" title="Document preview"></iframe>
+      </div>
+
+      <!-- IMAGE + CANVAS (drag-to-select extraction - archived, see selectionMode) -->
+      <div class="canvas-container" *ngIf="!isLoadingDocument && documentFileType === 'image' && documentImage">
+        <div class="canvas-info">
+          <small>Click to enlarge.</small>
+        </div>
+        <canvas #documentCanvas id="documentCanvas" class="document-canvas"></canvas>
+      </div>
+
+      <div *ngIf="!documentFileType && !isLoadingDocument" class="no-document">
+        <mat-icon>description</mat-icon>
+        <p>No document loaded</p>
+      </div>
+
+      <!-- ANALYSIS PANEL -->
+      <div *ngIf="showAnalysisPanel" class="analysis-panel">
+        <h3>Analysis</h3>
+
+        <!-- Live Processing Indicator -->
+        <div *ngIf="isProcessing" class="processing-indicator">
+          <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+          <p>{{ processingStep }}</p>
+        </div>
+
+        <ng-container *ngIf="!isProcessing">
+          <!-- Saved / not saved -->
+          <div class="analysis-card" *ngIf="savedAnalysisId || saveError">
+            <div class="card-header" [class.alert]="saveError">
+              <mat-icon>{{ saveError ? 'cloud_off' : 'cloud_done' }}</mat-icon>
+              <strong>{{ saveError ? 'Not saved' : 'Saved' }}</strong>
+            </div>
+            <div class="card-body">
+              <p *ngIf="savedAnalysisId" class="success-text">
+                Stored on the server, document included — reloading this page
+                brings it back.
+              </p>
+              <small *ngIf="savedAnalysisId" class="hash-display">Record ID: {{ savedAnalysisId }}</small>
+              <p *ngIf="saveError" class="alert-text">{{ saveError }}</p>
+            </div>
+          </div>
+
+          <!-- Duplicate Check -->
+          <div class="analysis-card" *ngIf="duplicateCheckResult">
+            <div class="card-header" [class.alert]="duplicateCheckResult.isDuplicate">
+              <mat-icon>{{ duplicateCheckResult.isDuplicate ? 'warning' : 'check_circle' }}</mat-icon>
+              <strong>Duplicate Check</strong>
+            </div>
+            <div class="card-body">
+              <p *ngIf="duplicateCheckResult.isDuplicate" class="alert-text">
+                <ng-container *ngIf="duplicateCheckResult.matchType === 'SAME_CONTENT'">
+                  Same document already on file, uploaded as a different file
+                  (re-scanned or re-exported — the file itself differs).
+                  <br>Matched on: {{ duplicateCheckResult.matchedOn?.join(', ') }}
+                </ng-container>
+                <ng-container *ngIf="duplicateCheckResult.matchType !== 'SAME_CONTENT'">
+                  This exact file has been uploaded before.
+                </ng-container>
+                <br>Upload Reference (internal, not from the document itself): {{ duplicateCheckResult.existingDocumentId }}
+                <br>Uploaded: {{ duplicateCheckResult.uploadedAt | date:'medium' }}
+              </p>
+              <p *ngIf="!duplicateCheckResult.isDuplicate" class="success-text">
+                No matching document found — this upload is new.
+              </p>
+              <small class="hash-display">Checksum: {{ duplicateCheckResult.hash.substring(0, 16) }}…</small>
+            </div>
+          </div>
+
+          <!-- Document Type -->
+          <div class="analysis-card" *ngIf="fieldExtractionResult">
+            <div class="card-header">
+              <mat-icon>category</mat-icon>
+              <strong>Document Type</strong>
+            </div>
+            <div class="card-body">
+              <mat-chip-set>
+                <mat-chip>{{ fieldExtractionResult.documentType }}</mat-chip>
+              </mat-chip-set>
+              <p class="confidence-text">
+                Match confidence: {{ (fieldExtractionResult.overallConfidence * 100).toFixed(1) }}%
+              </p>
+            </div>
+          </div>
+
+          <!-- Extracted Fields -->
+          <div class="analysis-card" *ngIf="fieldExtractionResult && fieldExtractionResult.fields.length > 0">
+            <div class="card-header">
+              <mat-icon>fact_check</mat-icon>
+              <strong>Extracted Fields</strong>
+            </div>
+            <div class="card-body">
+              <div class="field-item" *ngFor="let field of fieldExtractionResult.fields">
+                <span class="field-name">{{ field.fieldName }}:</span>
+                <span class="field-value">{{ field.value }}</span>
+                <span class="field-confidence" [style.color]="field.confidence > 0.8 ? '#4caf50' : '#ff9800'">
+                  {{ (field.confidence * 100).toFixed(0) }}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="analysis-card" *ngIf="fieldExtractionResult && fieldExtractionResult.fields.length === 0">
+            <div class="card-header">
+              <mat-icon>info_outline</mat-icon>
+              <strong>Extracted Fields</strong>
+            </div>
+            <div class="card-body">
+              <p>No recognisable fields were found. The scan may be low quality, or the layout is not one the reader knows yet.</p>
+            </div>
+          </div>
+
+          <!-- Entity screening (manual — metered external provider) -->
+          <div class="analysis-card" *ngIf="showEntityScreening && extractableName">
+            <div class="card-header" [class.alert]="entityCheckResult?.hasMatch || entityCheckError">
+              <mat-icon>person_search</mat-icon>
+              <strong>Watchlist Screening</strong>
+            </div>
+            <div class="card-body">
+              <div class="field-item">
+                <span class="field-name">Name to screen:</span>
+                <span class="field-value">{{ extractableName }}</span>
+              </div>
+
+              <div class="screening-actions" *ngIf="!entityCheckResult && !entityCheckError">
+                <button mat-stroked-button (click)="checkEntityName('Company')" [disabled]="isCheckingEntity">
+                  {{ isCheckingEntity ? 'Screening…' : 'Screen as Company' }}
+                </button>
+                <button mat-stroked-button (click)="checkEntityName('Person')" [disabled]="isCheckingEntity">
+                  {{ isCheckingEntity ? 'Screening…' : 'Screen as Person' }}
+                </button>
+              </div>
+              <small class="hash-display" *ngIf="!entityCheckResult && !entityCheckError">
+                Checks real sanctions and PEP watchlists. Limited monthly allowance, so this runs only when you ask.
+              </small>
+
+              <p class="alert-text" *ngIf="entityCheckError">{{ entityCheckError }}</p>
+
+              <ng-container *ngIf="entityCheckResult && !entityCheckError">
+                <p class="alert-text" *ngIf="entityCheckResult.hasMatch">
+                  Match found — this name appears on a watchlist.
+                </p>
+                <p class="success-text" *ngIf="!entityCheckResult.hasMatch">
+                  No watchlist match found for this name.
+                </p>
+
+                <div class="issue-list" *ngIf="entityCheckResult.candidates.length > 0">
+                  <div class="issue-item" *ngFor="let c of entityCheckResult.candidates"
+                       [style.border-left-color]="c.isMatch ? '#f44336' : '#9e9e9e'">
+                    <div class="issue-header">
+                      <span class="issue-field">{{ c.name }}</span>
+                      <span class="issue-type">{{ (c.score * 100).toFixed(0) }}%</span>
+                    </div>
+                    <p class="issue-message" *ngIf="c.topics?.length">
+                      {{ c.topics?.join(', ') }}
+                    </p>
+                    <p class="issue-suggestion" *ngIf="c.datasets?.length">
+                      Listed on: {{ c.datasets?.slice(0, 4)?.join(', ') }}
+                    </p>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Text Recognition -->
+          <div class="analysis-card" *ngIf="ocrResult">
+            <div class="card-header">
+              <mat-icon>text_fields</mat-icon>
+              <strong>Recognised Text — {{ (ocrResult.confidence <= 1 ? ocrResult.confidence * 100 : ocrResult.confidence).toFixed(1) }}% confidence</strong>
+            </div>
+            <div class="card-body">
+              <div class="ocr-text-preview">{{ ocrResult.text.substring(0, 200) }}{{ ocrResult.text.length > 200 ? '…' : '' }}</div>
+            </div>
+          </div>
+
+          <!-- Validation Report -->
+          <div class="analysis-card validation-card" *ngIf="anomalyReport">
+            <div class="card-header" [style.background]="getStatusColor(anomalyReport.overallStatus)">
+              <mat-icon>verified_user</mat-icon>
+              <strong>Validation — {{ anomalyReport.overallStatus }}</strong>
+            </div>
+            <div class="card-body">
+              <div class="validation-summary">
+                <span class="stat critical" *ngIf="anomalyReport.criticalCount > 0">
+                  {{ anomalyReport.criticalCount }} critical
+                </span>
+                <span class="stat warning" *ngIf="anomalyReport.warningCount > 0">
+                  {{ anomalyReport.warningCount }} warning
+                </span>
+                <span class="stat info" *ngIf="anomalyReport.infoCount > 0">
+                  {{ anomalyReport.infoCount }} info
+                </span>
+                <span class="stat pass" *ngIf="anomalyReport.totalIssues === 0">
+                  All checks passed
+                </span>
+              </div>
+
+              <div class="issue-list" *ngIf="anomalyReport.issues.length > 0">
+                <div class="issue-item" *ngFor="let issue of anomalyReport.issues"
+                     [style.border-left-color]="getSeverityColor(issue.severity)">
+                  <div class="issue-header">
+                    <span class="issue-type">{{ issue.type }}</span>
+                    <span class="issue-field">{{ issue.field }}</span>
+                  </div>
+                  <p class="issue-message">{{ issue.message }}</p>
+                  <p class="issue-suggestion" *ngIf="issue.suggestion">{{ issue.suggestion }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- DMS routing info — shown once a document type is detected -->
+      <div class="dms-routing-banner" *ngIf="fieldExtractionResult?.documentType">
+        <span class="routing-label">Will be sent to DMS as</span>
+        <span class="routing-badge">{{ dmsProductCode }}</span>
+        <span class="routing-arrow">→</span>
+        <span class="routing-collection">{{ dmsCollectionName }}</span>
+      </div>
+
+      <!-- Actions: Proceed, Download, Clear -->
+      <div class="extraction-actions" *ngIf="documentFileType">
+        <button mat-flat-button color="primary"
+                (click)="proceedAndSaveToDms()"
+                [disabled]="isProcessing || isSavingToDms || !uploadedFile">
+          <mat-icon *ngIf="!isSavingToDms">send</mat-icon>
+          <mat-spinner *ngIf="isSavingToDms" diameter="16" style="display:inline-block;margin-right:6px;"></mat-spinner>
+          {{ isSavingToDms ? 'Sending to DMS…' : 'Proceed and send the document to DMS (' + dmsProductCode + ')' }}
+        </button>
+        <button mat-stroked-button (click)="downloadExtractions()" [disabled]="isProcessing">
+          <mat-icon>download</mat-icon>
+          {{ isProcessing ? 'Analysing…' : 'Download Report' }}
+        </button>
+        <button mat-stroked-button color="warn" (click)="clearAll()">
+          <mat-icon>delete_sweep</mat-icon>
+          Clear
+        </button>
+      </div>
+
+      <!-- DMS save feedback -->
+      <div class="dms-save-feedback" *ngIf="dmsSaveResult || dmsSaveError">
+        <div class="dms-result-card dms-result-success" *ngIf="dmsSaveResult">
+          <mat-icon>check_circle</mat-icon>
+          <div class="dms-result-body">
+            <strong>Sent to DMS</strong>
+            <span>{{ dmsSaveResult }}</span>
+          </div>
+        </div>
+        <div class="dms-result-card dms-result-error" *ngIf="dmsSaveError">
+          <mat-icon>error</mat-icon>
+          <div class="dms-result-body">
+            <strong>Send Failed</strong>
+            <span>{{ dmsSaveError }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Manual Extraction Panel (archived - see selectionMode) -->
+    <div class="extraction-section" *ngIf="selectionMode">
+      <h3>Selected Regions</h3>
+
+      <div *ngIf="extractedDataList.length === 0" class="no-extractions">
+        <p>Drag across the document to pull text from a specific area.</p>
+      </div>
+
+      <mat-list *ngIf="extractedDataList.length > 0">
+        <mat-list-item *ngFor="let item of extractedDataList; let i = index">
+          <div class="extraction-item">
+            <div class="item-header">
+              <strong>Region {{ i + 1 }} — {{ item.timestamp | date:'HH:mm:ss' }}</strong>
+              <button mat-icon-button (click)="deleteExtraction(item.id)" color="warn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+            <div class="item-coords">
+              ({{ item.coordinates.x1 }}, {{ item.coordinates.y1 }})
+              → ({{ item.coordinates.x2 }}, {{ item.coordinates.y2 }})
+            </div>
+            <div class="item-text">
+              <code>{{ item.text }}</code>
+            </div>
+          </div>
+        </mat-list-item>
+      </mat-list>
+
+    </div>
+  </div>
+</div>

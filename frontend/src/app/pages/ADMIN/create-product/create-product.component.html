@@ -1,0 +1,23 @@
+<div class="create-user-container">
+    <h2>Create Product</h2>
+
+    <form [formGroup]="productForm" (ngSubmit)="addProduct()">
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Product Code</mat-label>
+            <input matInput formControlName="productcode" required />
+            <mat-error *ngIf="productForm.get('productcode')?.hasError('required')">
+                Product Code is required
+            </mat-error>
+        </mat-form-field>
+
+        <div class="actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="busy || productForm.invalid">
+                {{ busy ? 'Adding…' : 'Add Product Code' }}
+            </button>
+        </div>
+
+        <p class="result-message" *ngIf="resultMessage">{{ resultMessage }}</p>
+        <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </form>
+</div>

@@ -1,0 +1,32 @@
+@use "./styles/theme";
+/* You can add global styles to this file, and also import other style files */
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* 🌍 Default Font Setup */
+* {
+    font-family: 'Poppins', sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.3px;
+}
+
+mat-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: 'Material Icons Outlined' !important;
+    /* choose outlined style */
+    font-feature-settings: 'liga';
+    font-size: 22px;
+    color: #e3f2fd;
+}
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

@@ -1,0 +1,85 @@
+<!-- ================= HEADER ================= -->
+<div class="page-header">
+    <div class="title">
+        <h2>User Inquiries</h2>
+        <p>View and manage users</p>
+    </div>
+</div>
+
+<!-- ================= SEARCH ================= -->
+<div class="search-system">
+    <div class="search-input-group">
+        <input type="text" placeholder="Search by Login ID or Username" [(ngModel)]="searchQuery"
+            (input)="applyFilters()" />
+
+        <button *ngIf="searchQuery" class="clear-btn" (click)="clearSearch()">
+            <mat-icon>clear</mat-icon>
+        </button>
+    </div>
+</div>
+
+<!-- ================= TABS ================= -->
+<div class="ui-tabs">
+    <button type="button" class="tab" *ngFor="let tab of tabs" [class.active]="activeTab === tab.key"
+        (click)="setActiveTab(tab.key)">
+        {{ tab.label }}
+    </button>
+</div>
+
+<!-- ================= SUMMARY ================= -->
+<div class="filter-row">
+    <div class="results-summary">
+        <ng-container *ngIf="!loading">
+            Showing {{ pagedUsers.length }} of {{ filteredUsers.length }} users
+        </ng-container>
+        <ng-container *ngIf="loading">Loading…</ng-container>
+    </div>
+</div>
+
+<p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+<!-- ================= TABLE ================= -->
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th (click)="sortBy('loginid')">Login ID</th>
+                <th (click)="sortBy('username')">Username</th>
+                <th (click)="sortBy('usercat')">Category</th>
+                <th (click)="sortBy('recstatus')">Record Status</th>
+                <th>Department</th>
+                <th>Created On</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr *ngFor="let user of pagedUsers; trackBy: trackByLoginId">
+                <td>{{ user.loginid }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ categoryLabel(user.usercat) }}</td>
+                <td>{{ statusLabel(user.recstatus) }}</td>
+                <td>{{ user.departmentcode || '—' }}</td>
+                <td>{{ (user.createdon | date: 'dd MMM yyyy, HH:mm') || '—' }}</td>
+                <td>
+                    <button class="btn-action" (click)="openUser(user)">
+                        <mat-icon>open_in_new</mat-icon> Open
+                    </button>
+                </td>
+            </tr>
+
+            <tr *ngIf="pagedUsers.length === 0 && !loading">
+                <td colspan="7" class="no-records">
+                    No users found
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ================= PAGINATION ================= -->
+    <div class="pagination">
+        <button class="btn-pagination" (click)="previousPage()" [disabled]="currentPage === 1">‹</button>
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="btn-pagination" (click)="nextPage()" [disabled]="currentPage === totalPages">›</button>
+    </div>
+</div>

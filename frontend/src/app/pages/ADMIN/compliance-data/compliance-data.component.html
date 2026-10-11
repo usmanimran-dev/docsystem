@@ -1,0 +1,193 @@
+<div class="compliance-data-container">
+  <h2>Compliance Data</h2>
+
+  <!-- ================= TABS ================= -->
+  <div class="ui-tabs">
+    <button type="button" class="tab" [class.active]="activeTab === 'countries'"
+            (click)="setActiveTab('countries')">Countries</button>
+    <button type="button" class="tab" [class.active]="activeTab === 'ports'"
+            (click)="setActiveTab('ports')">Ports</button>
+  </div>
+
+  <ng-container *ngIf="activeTab === 'countries'">
+  <p class="subtitle">
+    Upload the bank's own country risk list. Uploading merges into the
+    existing table — a country already on the list gets updated with the
+    bank's classification, a new country gets added, nothing is deleted.
+  </p>
+
+  <div class="upload-area">
+    <input type="file" #fileInput id="countryFileInput" accept=".csv"
+           (change)="onFileSelected($event)" style="display: none;">
+    <button mat-raised-button color="primary" (click)="fileInput.click()" [disabled]="isUploading">
+      {{ isUploading ? 'Uploading…' : 'Upload Country List (CSV)' }}
+    </button>
+    <span class="format-hint">
+      Columns: iso_code, country_name, category (SANCTIONED or HIGH_RISK), aliases (optional, semicolon-separated — e.g. "North Korea;DPRK")
+    </span>
+  </div>
+
+  <div class="error-banner" *ngIf="uploadError">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ uploadError }}</span>
+  </div>
+
+  <!-- Import result summary -->
+  <div class="import-summary" *ngIf="lastImportResult">
+    <h3>Last import — {{ lastImportResult.filename }}</h3>
+    <div class="summary-stats">
+      <span class="stat added">{{ lastImportResult.added }} added</span>
+      <span class="stat updated">{{ lastImportResult.updated }} updated</span>
+      <span class="stat skipped" *ngIf="lastImportResult.skipped > 0">{{ lastImportResult.skipped }} skipped</span>
+    </div>
+
+    <div class="row-list" *ngIf="lastImportResult.skipped > 0">
+      <div class="row-item" *ngFor="let row of lastImportResult.rows" [class.is-skipped]="row.outcome === 'SKIPPED'">
+        <span class="row-line">Line {{ row.lineNumber }}</span>
+        <span class="row-code">{{ row.isoCode || '—' }}</span>
+        <span class="row-outcome">{{ row.outcome }}</span>
+        <span class="row-reason" *ngIf="row.reason">{{ row.reason }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current table -->
+  <div class="country-table-section">
+    <div class="section-header">
+      <h3>Current List ({{ countries.length }})</h3>
+      <button mat-icon-button (click)="loadCountries()" [disabled]="isLoadingCountries" title="Refresh">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+
+    <div class="loading" *ngIf="isLoadingCountries">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+
+    <p class="error-text" *ngIf="loadError">{{ loadError }}</p>
+
+    <div class="table-scroll" *ngIf="!isLoadingCountries && !loadError">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Country</th>
+            <th>Source</th>
+            <th>Classification</th>
+            <th>Verified</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let country of countries">
+            <td class="mono">{{ country.isoCode }}</td>
+            <td>{{ country.name }}</td>
+            <td>
+              <mat-chip [class.chip-bank]="country.listType === 'BANK_PROVIDED'">
+                {{ listTypeLabel(country.listType) }}
+              </mat-chip>
+            </td>
+            <td>
+              <span class="severity-dot" [class.critical]="severityFor(country.tier) === 'critical'"></span>
+              {{ country.tier }}
+            </td>
+            <td class="mono">{{ country.verifiedDate }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </ng-container>
+
+  <!-- ================= PORTS TAB ================= -->
+  <ng-container *ngIf="activeTab === 'ports'">
+  <p class="subtitle">
+    Upload the bank's own sanctioned/high-risk port list — a port must be
+    listed here directly to be flagged (SANCTIONED or HIGH_RISK). A port's
+    own country being sanctioned no longer flags it automatically — only a
+    direct entry in this list does.
+  </p>
+
+  <div class="upload-area">
+    <input type="file" #portFileInput id="portFileInput" accept=".csv"
+           (change)="onPortFileSelected($event)" style="display: none;">
+    <button mat-raised-button color="primary" (click)="portFileInput.click()" [disabled]="isUploadingPort">
+      {{ isUploadingPort ? 'Uploading…' : 'Upload Port List (CSV)' }}
+    </button>
+    <span class="format-hint">
+      Columns: unlocode (5-character UN/LOCODE, e.g. "AEJEA"), port_name, category (SANCTIONED or HIGH_RISK)
+    </span>
+  </div>
+
+  <div class="error-banner" *ngIf="portUploadError">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ portUploadError }}</span>
+  </div>
+
+  <!-- Import result summary -->
+  <div class="import-summary" *ngIf="lastPortImportResult">
+    <h3>Last import — {{ lastPortImportResult.filename }}</h3>
+    <div class="summary-stats">
+      <span class="stat added">{{ lastPortImportResult.added }} added</span>
+      <span class="stat updated">{{ lastPortImportResult.updated }} updated</span>
+      <span class="stat skipped" *ngIf="lastPortImportResult.skipped > 0">{{ lastPortImportResult.skipped }} skipped</span>
+    </div>
+
+    <div class="row-list" *ngIf="lastPortImportResult.skipped > 0">
+      <div class="row-item" *ngFor="let row of lastPortImportResult.rows" [class.is-skipped]="row.outcome === 'SKIPPED'">
+        <span class="row-line">Line {{ row.lineNumber }}</span>
+        <span class="row-code">{{ row.unlocode || '—' }}</span>
+        <span class="row-outcome">{{ row.outcome }}</span>
+        <span class="row-reason" *ngIf="row.reason">{{ row.reason }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current table -->
+  <div class="country-table-section">
+    <div class="section-header">
+      <h3>Current List ({{ ports.length }})</h3>
+      <button mat-icon-button (click)="loadPorts()" [disabled]="isLoadingPorts" title="Refresh">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+
+    <div class="loading" *ngIf="isLoadingPorts">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+
+    <p class="error-text" *ngIf="portLoadError">{{ portLoadError }}</p>
+
+    <div class="table-scroll" *ngIf="!isLoadingPorts && !portLoadError">
+      <table>
+        <thead>
+          <tr>
+            <th>UN/LOCODE</th>
+            <th>Port</th>
+            <th>Source</th>
+            <th>Classification</th>
+            <th>Verified</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let port of ports">
+            <td class="mono">{{ port.unlocode }}</td>
+            <td>{{ port.portName }}</td>
+            <td>
+              <mat-chip class="chip-bank" [title]="port.source">{{ portSourceLabel(port.source) }}</mat-chip>
+            </td>
+            <td>
+              <span class="severity-dot" [class.critical]="severityForPort(port.tier) === 'critical'"></span>
+              {{ port.tier }}
+            </td>
+            <td class="mono">{{ port.verifiedDate }}</td>
+          </tr>
+
+          <tr *ngIf="ports.length === 0">
+            <td colspan="5" class="no-records">No sanctioned/high-risk ports on file yet</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </ng-container>
+</div>

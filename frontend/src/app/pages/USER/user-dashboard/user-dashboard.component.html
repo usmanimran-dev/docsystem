@@ -1,0 +1,47 @@
+<!-- 💡 Main Body -->
+<div class="main-content">
+    <mat-card class="welcome-card glass-card">
+        <h1>Search Your Documents 🔍</h1>
+        <p>Enter your reference number to find your documents instantly.</p>
+
+        <!-- 🧾 Search -->
+        <mat-form-field appearance="outline" class="dashboard-search">
+            <mat-label>Search by Reference</mat-label>
+            <input matInput placeholder="e.g. SRT-ILC-1789816200659" [(ngModel)]="searchTerm" (keyup.enter)="onSearch()" />
+            <button mat-icon-button matSuffix (click)="onSearch()">
+                <mat-icon>search</mat-icon>
+            </button>
+        </mat-form-field>
+
+        <!-- 🕒 Loading -->
+        <div *ngIf="loading" class="search-status">
+            <mat-progress-spinner diameter="45" mode="indeterminate"></mat-progress-spinner>
+            <p>Searching your documents...</p>
+        </div>
+
+        <!-- ⚠️ Error -->
+        <div *ngIf="error && !loading" class="search-error mat-elevation-z3">
+            {{ error }}
+        </div>
+
+        <!-- 📄 Results -->
+        <div *ngIf="!loading && results.length > 0" class="results-list">
+            <mat-card *ngFor="let r of results" class="pdf-card mat-elevation-z3">
+                <div class="pdf-info">
+                    <div class="pdf-title">{{ r.filename }}</div>
+                    <div class="pdf-ref">Ref: {{ r.tnxreference }}</div>
+                    <div class="pdf-date" *ngIf="r.description">{{ r.description }}</div>
+                </div>
+                <button mat-flat-button color="primary" (click)="openDocument(r)" [disabled]="openingDocId === r.docid">
+                    {{ openingDocId === r.docid ? 'Opening…' : 'Open document' }}
+                </button>
+            </mat-card>
+        </div>
+
+        <!-- 🗒️ No Results -->
+        <div *ngIf="!loading && !error && searchTerm && results.length === 0" class="no-results">
+            <mat-icon>find_in_page</mat-icon>
+            <p>No documents found for "<strong>{{ searchTerm }}</strong>"</p>
+        </div>
+    </mat-card>
+</div>

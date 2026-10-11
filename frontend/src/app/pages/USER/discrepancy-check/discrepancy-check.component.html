@@ -1,0 +1,123 @@
+<div class="discrepancy-page">
+
+  <header class="page-header">
+    <h1>Discrepancy Check</h1>
+    <p>Compare two analysed documents and see where their details disagree.</p>
+  </header>
+
+  <section class="picker-card">
+    <div *ngIf="isLoadingAnalyses" class="loading-row">
+      <mat-spinner diameter="24"></mat-spinner>
+      <span>Loading analysed documents…</span>
+    </div>
+
+    <div *ngIf="loadError" class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ loadError }}</span>
+      <button mat-button (click)="loadAnalyses()">Retry</button>
+    </div>
+
+    <ng-container *ngIf="!isLoadingAnalyses && !loadError">
+      <p *ngIf="analyses.length < 2" class="empty-note">
+        You need at least two analysed documents before you can compare.
+        Read some documents in the Document Reader first.
+      </p>
+
+      <div *ngIf="analyses.length >= 2" class="picker-grid">
+        <label class="picker">
+          <span class="picker-label">Document A</span>
+          <select [(ngModel)]="documentAId" (ngModelChange)="reset()">
+            <option value="">Select a document…</option>
+            <option *ngFor="let a of analyses" [value]="a.id">
+              {{ a.filename }} — {{ a.documentType }}
+            </option>
+          </select>
+        </label>
+
+        <label class="picker">
+          <span class="picker-label">Document B</span>
+          <select [(ngModel)]="documentBId" (ngModelChange)="reset()">
+            <option value="">Select a document…</option>
+            <option *ngFor="let a of analyses" [value]="a.id">
+              {{ a.filename }} — {{ a.documentType }}
+            </option>
+          </select>
+        </label>
+
+        <label class="picker lc-ref">
+          <span class="picker-label">LC reference <em>(optional)</em></span>
+          <input type="text" [(ngModel)]="lcReference" placeholder="SRT-ILC-…">
+        </label>
+      </div>
+
+      <p *ngIf="documentAId && documentAId === documentBId" class="warn-note">
+        Pick two different documents.
+      </p>
+
+      <button mat-raised-button color="primary"
+              [disabled]="!canCheck"
+              (click)="runCheck()">
+        <mat-icon>compare_arrows</mat-icon>
+        {{ isChecking ? 'Comparing…' : 'Compare documents' }}
+      </button>
+    </ng-container>
+  </section>
+
+  <div *ngIf="checkError" class="error-banner">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ checkError }}</span>
+  </div>
+
+  <section *ngIf="report" class="report">
+
+    <div class="summary-card" [class.clean]="report.verdict === 'CLEAN'">
+      <div class="summary-verdict">
+        <mat-icon>{{ report.verdict === 'CLEAN' ? 'check_circle' : 'report_problem' }}</mat-icon>
+        <span>{{ report.verdict === 'CLEAN' ? 'No discrepancies found' : 'Discrepancies found' }}</span>
+      </div>
+
+      <div class="summary-counts">
+        <span class="count total"><b>{{ report.totalCompared }}</b> compared</span>
+        <span class="count match"><b>{{ report.matchCount }}</b> matched</span>
+        <span class="count conflict"><b>{{ report.conflictCount }}</b> conflicts</span>
+        <span class="count review"><b>{{ report.reviewCount }}</b> need review</span>
+      </div>
+
+      <div class="summary-meta">
+        <span><b>A:</b> {{ report.documentAFilename || filenameFor(report.documentAId) }}</span>
+        <span><b>B:</b> {{ report.documentBFilename || filenameFor(report.documentBId) }}</span>
+        <span *ngIf="report.lcReference"><b>LC:</b> {{ report.lcReference }}</span>
+        <span><b>Checked:</b> {{ report.createdAt | date:'medium' }}</span>
+      </div>
+    </div>
+
+    <p *ngIf="report.totalCompared === 0" class="empty-note">
+      These two documents have no fields in common, so there was nothing to compare.
+    </p>
+
+    <table *ngIf="report.totalCompared > 0" class="results-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Document A</th>
+          <th>Document B</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let line of sortedResults" [class]="'row-' + line.verdict.toLowerCase()">
+          <td class="field-name">{{ labelFor(line.fieldName) }}</td>
+          <td>{{ line.valueA }}</td>
+          <td>{{ line.valueB }}</td>
+          <td class="verdict-cell">
+            <span class="verdict-badge" [class]="line.verdict.toLowerCase()">
+              {{ line.verdict }}
+            </span>
+            <small *ngIf="line.note">{{ line.note }}</small>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>

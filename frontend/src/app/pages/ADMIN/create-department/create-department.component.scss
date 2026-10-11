@@ -1,0 +1,94 @@
+// Matches the existing create-user / create-product form styling
+.create-user-container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        font-weight: 600;
+        color: #1976d2;
+    }
+
+    .status-banner {
+        text-align: center;
+        margin-bottom: 20px;
+
+        .status-chip {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #eceff1;
+            color: #455a64;
+
+            &.saved {
+                background: #fff3e0;
+                color: #e65100;
+            }
+
+            &.submitted {
+                background: #e3f2fd;
+                color: #1565c0;
+            }
+
+            &.approved {
+                background: #e8f5e9;
+                color: #2e7d32;
+            }
+        }
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+
+        .full-width {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+
+            button {
+                padding: 10px 25px;
+                font-weight: 500;
+            }
+        }
+
+        .result-message {
+            margin-top: 18px;
+            text-align: center;
+            color: #1976d2;
+        }
+
+        .error-message {
+            margin-top: 18px;
+            text-align: center;
+            color: #c62828;
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .create-user-container {
+        padding: 20px;
+        margin: 20px;
+    }
+
+    form .actions {
+        flex-direction: column;
+
+        button {
+            width: 100%;
+        }
+    }
+}

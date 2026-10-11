@@ -1,0 +1,67 @@
+<div class="main-content">
+    <mat-card class="search-card">
+        <h2>{{ heading }}</h2>
+        <p class="subtitle">Search by transaction reference, file name or document ID.</p>
+
+        <div class="search-input-group">
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Search</mat-label>
+                <input matInput [(ngModel)]="searchQuery" (input)="applyFilter()"
+                       placeholder="e.g. CUS1234" />
+                <button matSuffix mat-icon-button *ngIf="searchQuery"
+                        (click)="clearSearch()" aria-label="Clear search">
+                    <mat-icon>clear</mat-icon>
+                </button>
+            </mat-form-field>
+        </div>
+
+        <div *ngIf="loading" class="spinner-container">
+            <mat-spinner diameter="40"></mat-spinner>
+        </div>
+
+        <ng-container *ngIf="!loading">
+            <p class="results-summary" *ngIf="allDocuments.length > 0">
+                Showing {{ filteredDocuments.length }} of {{ allDocuments.length }} documents
+            </p>
+
+            <div class="table-container" *ngIf="filteredDocuments.length > 0">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Transaction Ref</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Event Ref</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let doc of filteredDocuments; trackBy: trackByDocId">
+                            <td>
+                                <!-- Clicking the file name opens the document. -->
+                                <button type="button" class="doc-link"
+                                        (click)="openDocument(doc)"
+                                        [disabled]="openingDocId === doc.docid">
+                                    <mat-icon>description</mat-icon>
+                                    {{ doc.filename || doc.docid }}
+                                    <span *ngIf="openingDocId === doc.docid" class="opening">opening…</span>
+                                </button>
+                            </td>
+                            <td>{{ doc.tnxreference || '—' }}</td>
+                            <td>{{ doc.description || '—' }}</td>
+                            <td>{{ doc.docdoccat || '—' }}</td>
+                            <td>{{ doc.eventreference || '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="result-message"
+               *ngIf="allDocuments.length > 0 && filteredDocuments.length === 0">
+                No documents match “{{ searchQuery }}”
+            </p>
+
+            <p class="result-message" *ngIf="message">{{ message }}</p>
+        </ng-container>
+    </mat-card>
+</div>

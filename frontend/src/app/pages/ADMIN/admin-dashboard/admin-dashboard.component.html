@@ -1,0 +1,247 @@
+<div class="admin-dashboard">
+
+  <header class="page-header">
+    <div>
+      <h1>System Monitoring</h1>
+      <p>Extraction quality, validation outcomes and document volume across every stored analysis.</p>
+    </div>
+
+    <div class="window-picker" role="group" aria-label="Reporting period">
+      <button *ngFor="let w of windows"
+              type="button"
+              [class.active]="w.days === selectedDays"
+              (click)="selectWindow(w.days)">
+        {{ w.label }}
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="isLoading" class="loading-row">
+    <mat-spinner diameter="24"></mat-spinner>
+    <span>Loading monitoring data…</span>
+  </div>
+
+  <div *ngIf="loadError && !isLoading" class="error-banner">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ loadError }}</span>
+    <button type="button" (click)="load()">Retry</button>
+  </div>
+
+  <ng-container *ngIf="data && !isLoading">
+
+    <!-- Headline counters -->
+    <section class="counters">
+      <div class="counter">
+        <span class="counter-value">{{ data.totals.analyses }}</span>
+        <span class="counter-label">Analyses run</span>
+      </div>
+      <div class="counter">
+        <span class="counter-value">{{ data.totals.distinctDocuments }}</span>
+        <span class="counter-label">Distinct documents</span>
+      </div>
+      <div class="counter">
+        <span class="counter-value">{{ data.totals.discrepancyReports }}</span>
+        <span class="counter-label">Discrepancy checks</span>
+      </div>
+      <div class="counter" [class.alert]="data.totals.analysesWithCriticalIssues > 0">
+        <span class="counter-value">{{ data.totals.analysesWithCriticalIssues }}</span>
+        <span class="counter-label">With critical findings</span>
+      </div>
+    </section>
+
+    <!-- Extraction quality over time -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Extraction quality over time</h2>
+        <span class="card-note" *ngIf="confidenceDelta !== null">
+          {{ confidenceDelta >= 0 ? '+' : '' }}{{ (confidenceDelta * 100).toFixed(1) }} pts
+          across the period
+        </span>
+      </div>
+
+      <p class="empty-note" *ngIf="trendDays.length < 2">
+        Not enough history in this period to draw a trend.
+      </p>
+
+      <ng-container *ngIf="trendDays.length >= 2">
+        <div class="legend">
+          <span class="key extraction">Extraction confidence</span>
+          <span class="key read">Read confidence</span>
+          <span class="key fields">Fields per document (peak {{ maxFields | number:'1.0-1' }})</span>
+        </div>
+
+        <svg class="trend"
+             [attr.viewBox]="'0 0 ' + chart.width + ' ' + chart.height"
+             preserveAspectRatio="none"
+             role="img"
+             aria-label="Extraction confidence, read confidence and fields per document over time">
+          <line *ngFor="let g of [0, 0.25, 0.5, 0.75, 1]"
+                class="grid"
+                [attr.x1]="chart.padX"
+                [attr.x2]="chart.width - chart.padX"
+                [attr.y1]="chart.padY + (1 - g) * (chart.height - chart.padY * 2)"
+                [attr.y2]="chart.padY + (1 - g) * (chart.height - chart.padY * 2)" />
+          <polyline class="series fields" [attr.points]="fieldsLine" />
+          <polyline class="series read" [attr.points]="readLine" />
+          <polyline class="series extraction" [attr.points]="extractionLine" />
+        </svg>
+
+        <div class="trend-axis">
+          <span>{{ trendDays[0].day }}</span>
+          <span>{{ trendDays[trendDays.length - 1].day }}</span>
+        </div>
+      </ng-container>
+    </section>
+
+    <div class="two-up">
+
+      <!-- Validation outcomes -->
+      <section class="card">
+        <div class="card-head"><h2>Validation outcomes</h2></div>
+        <div class="bars">
+          <div class="bar-row" *ngFor="let s of data.validation.byStatus">
+            <span class="bar-label">{{ s.name }}</span>
+            <span class="bar-track">
+              <span class="bar-fill"
+                    [class.failed]="s.name === 'FAILED'"
+                    [class.warning]="s.name === 'WARNING'"
+                    [class.pass]="s.name === 'PASS'"
+                    [style.width]="barWidth(s.count, data.validation.byStatus)"></span>
+            </span>
+            <span class="bar-count">{{ s.count }}</span>
+          </div>
+        </div>
+
+        <h3 class="sub">Most frequent findings</h3>
+        <table class="mini-table">
+          <tr *ngFor="let i of data.validation.topIssues">
+            <td class="sev"><span class="pill" [class]="i.severity">{{ i.severity }}</span></td>
+            <td>{{ i.type }}</td>
+            <td class="field">{{ labelFor(i.field) }}</td>
+            <td class="num">{{ i.count }}</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- Document mix -->
+      <section class="card">
+        <div class="card-head"><h2>Document mix</h2></div>
+        <div class="bars">
+          <div class="bar-row" *ngFor="let t of data.documentTypes">
+            <span class="bar-label">{{ typeLabel(t.documentType) }}</span>
+            <span class="bar-track">
+              <span class="bar-fill" [style.width]="barWidth(t.count, data.documentTypes)"></span>
+            </span>
+            <span class="bar-count">{{ t.count }}</span>
+          </div>
+        </div>
+
+        <h3 class="sub">Source and repetition</h3>
+        <dl class="facts">
+          <div *ngFor="let f of data.fileTypes">
+            <dt>{{ f.name }}</dt>
+            <dd>{{ f.count }}</dd>
+          </div>
+          <div>
+            <dt>Distinct files</dt>
+            <dd>{{ data.duplication.distinctFileHashes }}</dd>
+          </div>
+          <div>
+            <dt>Repeat analyses</dt>
+            <dd>{{ data.duplication.repeatAnalyses }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+
+    <!-- Field coverage -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Field coverage by document type</h2>
+        <span class="card-note">A field found on few documents of its own type is a weak pattern.</span>
+      </div>
+
+      <div class="coverage-tabs">
+        <button *ngFor="let c of data.fieldCoverage"
+                type="button"
+                [class.active]="c.documentType === openCoverage"
+                (click)="toggleCoverage(c.documentType)">
+          {{ typeLabel(c.documentType) }}
+          <small>{{ c.totalDocuments }}</small>
+        </button>
+      </div>
+
+      <table class="coverage-table" *ngIf="openCoverageBlock as block">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th class="num">Found on</th>
+            <th class="cov">Coverage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of block.fields" [class.weak]="isWeak(f.coverage)">
+            <td>{{ labelFor(f.fieldName) }}</td>
+            <td class="num">{{ f.present }} / {{ block.totalDocuments }}</td>
+            <td class="cov">
+              <span class="cov-track">
+                <span class="cov-fill" [class.weak]="isWeak(f.coverage)" [style.width]="percent(f.coverage)"></span>
+              </span>
+              <span class="cov-value">{{ percent(f.coverage) }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Discrepancy outcomes -->
+    <section class="card">
+      <div class="card-head"><h2>Discrepancy checking</h2></div>
+
+      <p class="empty-note" *ngIf="data.discrepancies.reports === 0">
+        No discrepancy checks have been run in this period.
+      </p>
+
+      <ng-container *ngIf="data.discrepancies.reports > 0">
+        <dl class="facts wide">
+          <div>
+            <dt>Checks run</dt>
+            <dd>{{ data.discrepancies.reports }}</dd>
+          </div>
+          <div>
+            <dt>Clean</dt>
+            <dd class="good">{{ data.discrepancies.clean }}</dd>
+          </div>
+          <div>
+            <dt>With findings</dt>
+            <dd class="bad">{{ data.discrepancies.withFindings }}</dd>
+          </div>
+          <div>
+            <dt>Conflicts</dt>
+            <dd>{{ data.discrepancies.totalConflicts }}</dd>
+          </div>
+          <div>
+            <dt>Needing review</dt>
+            <dd>{{ data.discrepancies.totalReviews }}</dd>
+          </div>
+        </dl>
+
+        <h3 class="sub" *ngIf="data.discrepancies.topConflictFields.length">Fields that disagree most</h3>
+        <div class="bars">
+          <div class="bar-row" *ngFor="let f of data.discrepancies.topConflictFields">
+            <span class="bar-label">{{ labelFor(f.name) }}</span>
+            <span class="bar-track">
+              <span class="bar-fill failed" [style.width]="barWidth(f.count, data.discrepancies.topConflictFields)"></span>
+            </span>
+            <span class="bar-count">{{ f.count }}</span>
+          </div>
+        </div>
+      </ng-container>
+    </section>
+
+    <p class="generated">
+      Generated {{ data.generatedAt | date:'medium' }} ·
+      {{ data.windowDays === 0 ? 'all recorded history' : 'last ' + data.windowDays + ' days' }}
+    </p>
+  </ng-container>
+</div>

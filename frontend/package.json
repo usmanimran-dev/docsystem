@@ -1,0 +1,62 @@
+{
+  "name": "docufinder-web",
+  "version": "0.1.0",
+  "description": "DocuFinder web client: trade-document reading, compliance screening and cross-document discrepancy checking on top of the EDMS document store.",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless --code-coverage",
+    "lint": "ng lint",
+    "lint:fix": "ng lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@angular/animations": "^19.2.15",
+    "@angular/cdk": "^19.2.19",
+    "@angular/common": "^19.2.0",
+    "@angular/compiler": "^19.2.0",
+    "@angular/core": "^19.2.0",
+    "@angular/forms": "^19.2.0",
+    "@angular/material": "^19.2.19",
+    "@angular/platform-browser": "^19.2.0",
+    "@angular/platform-browser-dynamic": "^19.2.0",
+    "@angular/router": "^19.2.0",
+    "@tensorflow/tfjs": "^4.22.0",
+    "bootstrap": "^5.3.8",
+    "font-awesome": "^4.7.0",
+    "js-sha256": "^1.0.0",
+    "pdfjs-dist": "^4.10.38",
+    "rxjs": "~7.8.0",
+    "tesseract.js": "^7.0.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^19.2.16",
+    "@angular/cli": "^19.2.16",
+    "@angular/compiler-cli": "^19.2.0",
+    "@eslint/js": "^9.17.0",
+    "@types/jasmine": "~5.1.0",
+    "angular-eslint": "^19.4.0",
+    "bcryptjs": "^3.0.3",
+    "eslint": "^9.17.0",
+    "jasmine-core": "~5.6.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.18.0"
+  }
+}

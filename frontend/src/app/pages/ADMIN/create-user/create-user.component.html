@@ -1,0 +1,124 @@
+<div class="create-user-container">
+    <h2>{{ isNew ? 'Create User' : 'User Maintenance' }}</h2>
+
+    <div class="status-banner" *ngIf="!isNew">
+        <span class="status-chip" [class.saved]="isSaved" [class.submitted]="isSubmitted"
+            [class.approved]="isApproved">
+            {{ isSaved ? 'Saved' : isSubmitted ? 'Submitted' : 'Approved' }}
+        </span>
+    </div>
+
+    <form [formGroup]="userForm">
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Login ID</mat-label>
+            <input matInput formControlName="loginid" required>
+            <mat-error *ngIf="userForm.get('loginid')?.hasError('required')">
+                Login ID is required
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width" *ngIf="isNew">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password" required>
+            <mat-error *ngIf="userForm.get('password')?.hasError('required')">
+                Password is required
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Username</mat-label>
+            <input matInput formControlName="username" required>
+            <mat-error *ngIf="userForm.get('username')?.hasError('required')">
+                Username is required
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>User Status</mat-label>
+            <!-- Values are the single letters the backend stores, not the labels. -->
+            <mat-select formControlName="userstatus">
+                <mat-option value="A">Active</mat-option>
+                <mat-option value="I">Inactive</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>User Category</mat-label>
+            <mat-select formControlName="usercat">
+                <mat-option value="A">Admin</mat-option>
+                <mat-option value="U">User</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Department</mat-label>
+            <mat-select formControlName="departmentcode" [disabled]="departmentsLoading">
+                <mat-option *ngFor="let dept of departments" [value]="dept.departmentcode">
+                    {{ dept.departmentname }} ({{ dept.departmentcode }})
+                </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="departmentsLoading">Loading departments…</mat-hint>
+            <mat-hint *ngIf="departmentsError" class="field-error">{{ departmentsError }}</mat-hint>
+            <mat-hint *ngIf="!departmentsLoading && !departmentsError && departments.length === 0">
+                No approved departments yet
+            </mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Contact Number</mat-label>
+            <input matInput type="tel" formControlName="contactno">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email ID</mat-label>
+            <input matInput type="email" formControlName="emailid">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Employee ID</mat-label>
+            <input matInput formControlName="employeeid">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Mailing Address</mat-label>
+            <textarea matInput formControlName="mailingaddress" rows="2"></textarea>
+        </mat-form-field>
+
+        <div class="actions">
+            <!-- New record: save only -->
+            <button *ngIf="isNew" mat-stroked-button type="button" (click)="onReset()" [disabled]="busy">
+                Reset
+            </button>
+            <button *ngIf="isNew" mat-raised-button color="primary" type="button" (click)="onSave()"
+                [disabled]="busy || userForm.invalid">
+                Save
+            </button>
+
+            <!-- Saved record: update or submit -->
+            <button *ngIf="isSaved" mat-stroked-button type="button" (click)="onUpdate()" [disabled]="busy">
+                Update
+            </button>
+            <button *ngIf="isSaved" mat-raised-button color="primary" type="button" (click)="onSubmit()"
+                [disabled]="busy || userForm.invalid">
+                Submit
+            </button>
+
+            <!-- Submitted record: approve or reject -->
+            <button *ngIf="isSubmitted" mat-raised-button color="warn" type="button" (click)="onReject()"
+                [disabled]="busy">
+                Reject
+            </button>
+            <button *ngIf="isSubmitted" mat-raised-button color="primary" type="button" (click)="onApprove()"
+                [disabled]="busy">
+                Approve
+            </button>
+
+            <button *ngIf="!isNew" mat-stroked-button type="button" (click)="onBack()" [disabled]="busy">
+                Back
+            </button>
+        </div>
+
+        <p class="result-message" *ngIf="resultMessage">{{ resultMessage }}</p>
+        <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </form>
+</div>

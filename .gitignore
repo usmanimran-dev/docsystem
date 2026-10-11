@@ -1,0 +1,18 @@
+# ── Maven build output ──────────────────────────────────────────
+examination-service/target/
+
+# ── Demo data (contains password hashes — never commit) ─────────
+examination-service/demo-data/
+deploy/demo-files/
+
+# ── Angular ─────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# ── OS / editor ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.iml
+.idea/
+.vscode/

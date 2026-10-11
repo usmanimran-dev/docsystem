@@ -1,0 +1,75 @@
+<!-- 💡 Main Body -->
+<div class="main-content">
+   <mat-card class="search-card">
+        <h2>Find Documents</h2>
+        <p class="subtitle">
+            Enter a Master Reference to see all its documents, or add an Event
+            Reference to narrow the search.
+        </p>
+
+        <!-- Master Reference -->
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Master Reference</mat-label>
+            <input matInput [(ngModel)]="masterRef" (keyup.enter)="onSearch()"
+                   placeholder="e.g. ILC/MBW/11/0004" />
+        </mat-form-field>
+
+        <!-- Event Reference (optional) -->
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Event Reference (optional)</mat-label>
+            <input matInput [(ngModel)]="eventRef" (keyup.enter)="onSearch()" />
+        </mat-form-field>
+
+        <div class="actions">
+            <button mat-stroked-button type="button" (click)="onClear()" [disabled]="loading">
+                Clear
+            </button>
+            <button mat-raised-button color="accent" class="search-btn"
+                    (click)="onSearch()" [disabled]="loading">
+                {{ loading ? 'Searching…' : 'Search' }}
+            </button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div *ngIf="loading" class="spinner-container">
+            <mat-spinner diameter="40"></mat-spinner>
+        </div>
+
+        <!-- Results -->
+        <mat-card *ngIf="documents.length > 0 && !loading" class="result-card">
+            <h3 class="title">{{ documents.length }} document(s) found</h3>
+
+            <div class="table-container">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Event Ref</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let doc of documents; trackBy: trackByDocId">
+                            <td>
+                                <!-- Clicking the file name opens the document. -->
+                                <button type="button" class="doc-link"
+                                        (click)="openDocument(doc)"
+                                        [disabled]="openingDocId === doc.docid">
+                                    <mat-icon>description</mat-icon>
+                                    {{ doc.filename || doc.docid }}
+                                    <span *ngIf="openingDocId === doc.docid" class="opening">opening…</span>
+                                </button>
+                            </td>
+                            <td>{{ doc.description || '—' }}</td>
+                            <td>{{ doc.docdoccat || '—' }}</td>
+                            <td>{{ doc.eventreference || '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </mat-card>
+
+        <p class="result-message" *ngIf="message && !loading">{{ message }}</p>
+    </mat-card>
+</div>

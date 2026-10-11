@@ -1,0 +1,83 @@
+<!-- ================= HEADER ================= -->
+<div class="page-header">
+    <div class="title">
+        <h2>Department Inquiries</h2>
+        <p>View and manage departments</p>
+    </div>
+</div>
+
+<!-- ================= SEARCH ================= -->
+<div class="search-system">
+    <div class="search-input-group">
+        <input type="text" placeholder="Search by Department Code or Name" [(ngModel)]="searchQuery"
+            (input)="applyFilters()" />
+
+        <button *ngIf="searchQuery" class="clear-btn" (click)="clearSearch()">
+            <mat-icon>clear</mat-icon>
+        </button>
+    </div>
+</div>
+
+<!-- ================= TABS ================= -->
+<div class="ui-tabs">
+    <button type="button" class="tab" *ngFor="let tab of tabs" [class.active]="activeTab === tab.key"
+        (click)="setActiveTab(tab.key)">
+        {{ tab.label }}
+    </button>
+</div>
+
+<!-- ================= SUMMARY ================= -->
+<div class="filter-row">
+    <div class="results-summary">
+        <ng-container *ngIf="!loading">
+            Showing {{ pagedDepartments.length }} of {{ filteredDepartments.length }} departments
+        </ng-container>
+        <ng-container *ngIf="loading">Loading…</ng-container>
+    </div>
+</div>
+
+<p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+<!-- ================= TABLE ================= -->
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th (click)="sortBy('departmentcode')">Department Code</th>
+                <th (click)="sortBy('departmentname')">Department Name</th>
+                <th (click)="sortBy('recordstatus')">Record Status</th>
+                <th>Created By</th>
+                <th>Created On</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr *ngFor="let dept of pagedDepartments; trackBy: trackByCode">
+                <td>{{ dept.departmentcode }}</td>
+                <td>{{ dept.departmentname }}</td>
+                <td>{{ statusLabel(dept.recordstatus) }}</td>
+                <td>{{ dept.createdby || '—' }}</td>
+                <td>{{ (dept.createdon | date: 'dd MMM yyyy, HH:mm') || '—' }}</td>
+                <td>
+                    <button class="btn-action" (click)="openDepartment(dept)">
+                        <mat-icon>open_in_new</mat-icon> Open
+                    </button>
+                </td>
+            </tr>
+
+            <tr *ngIf="pagedDepartments.length === 0 && !loading">
+                <td colspan="6" class="no-records">
+                    No departments found
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ================= PAGINATION ================= -->
+    <div class="pagination">
+        <button class="btn-pagination" (click)="previousPage()" [disabled]="currentPage === 1">‹</button>
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="btn-pagination" (click)="nextPage()" [disabled]="currentPage === totalPages">›</button>
+    </div>
+</div>

@@ -1,0 +1,58 @@
+.layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    font-family: 'Poppins', sans-serif;
+    background: #f4f8ff;
+
+    .body {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+
+        /* Sidebar + Content handled via child components */
+        main.content {
+            flex: 1;
+            // A flex item will not shrink below its content's own minimum
+            // unless told to. Without this, a wide child (a table, a <select>
+            // with long options) pushes this element wider than the space
+            // left by the sidebar instead of scrolling inside it.
+            min-width: 0;
+            padding: 24px;
+            background: #f7faff;
+            overflow-y: auto;
+
+            // No margin-left when the sidebar is collapsed: the sidebar is a
+            // flex sibling, so it has already given the space back by
+            // shrinking to 72px. Adding a margin on top of that took 70px of
+            // width away again - collapsing the sidebar to gain room lost you
+            // most of what it freed.
+        }
+    }
+
+    footer.footer {
+        height: 50px;
+        line-height: 50px;
+        text-align: center;
+        background: #ffffff;
+        border-top: 1px solid #d7e3ff;
+        font-size: 14px;
+        color: #556;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        flex-shrink: 0;
+    }
+}
+
+/* Optional scrollbar styling for main content */
+main.content::-webkit-scrollbar {
+    width: 8px;
+}
+
+main.content::-webkit-scrollbar-thumb {
+    background-color: rgba(25, 118, 210, 0.3);
+    border-radius: 4px;
+}
+
+main.content::-webkit-scrollbar-track {
+    background: transparent;
+}
